@@ -368,7 +368,7 @@ class FetchManipulateEnvContinuous(robot_env.RobotEnv):
         goals = [goal0]
 
         prev_x_positions = [goal0[:2]]
-        # goal_in_air_used = False
+        goal_in_air_used = False
         for i in range(self.num_blocks - 1):
             if i < number_of_goals_along_stack - 1:
                 goal_i = goal0.copy()
@@ -383,9 +383,9 @@ class FetchManipulateEnvContinuous(robot_env.RobotEnv):
                 goal_i += self.target_offset
                 goal_i[2] = self.height_offset
 
-                # if np.random.uniform() < 0.2 and not goal_in_air_used:
-                #     goal_i[2] += self.np_random.uniform(0.03, 0.1)
-                #     goal_in_air_used = True
+                if np.random.uniform() < .2 and not goal_in_air_used:
+                    goal_i[2] += self.np_random.uniform(0.03, 0.1)
+                    goal_in_air_used = True
 
             prev_x_positions.append(goal_i[:2])
             goals.append(goal_i)

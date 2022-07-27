@@ -40,3 +40,11 @@ register(id='FetchManipulate5ObjectsContinuous-v0',
                  'model_path': 'fetch/stack5_with_targets.xml'
                  },
          max_episode_steps=200,)
+
+register(id='FetchManipulate3ObjectsContinuous-v0',
+         entry_point='env.envs:FetchManipulateEnvContinuous',
+         kwargs={'reward_type': 'incremental',
+                 'num_blocks': 3,
+                 'model_path': 'fetch/stack3_with_targets.xml'
+                 },
+         max_episode_steps=100,)

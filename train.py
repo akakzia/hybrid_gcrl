@@ -98,9 +98,9 @@ def launch(args):
             time_dict['rollout'] += time.time() - t_i
 
             # Goal Sampler updates
-            t_i = time.time()
-            episodes = goal_sampler.update(episodes)
-            time_dict['gs_update'] += time.time() - t_i
+            # t_i = time.time()
+            # episodes = goal_sampler.update(episodes)
+            # time_dict['gs_update'] += time.time() - t_i
 
             # Storing episodes
             t_i = time.time()
@@ -120,9 +120,6 @@ def launch(args):
             time_dict['policy_train'] += time.time() - t_i
             episode_count += args.num_rollouts_per_mpi * args.num_workers
 
-        if rank == 0:
-            goal_sampler.update_lp()
-        goal_sampler.sync()
         time_dict['epoch'] += time.time() -t_init
         time_dict['total'] = time.time() - t_total_init
 

@@ -303,11 +303,11 @@ class FetchManipulateEnvContinuous(robot_env.RobotEnv):
 
         self.sim.forward()
 
-    def reset(self, goal=None, biased_init=True):
-        self.binary_goal = goal
-
-        self.target_goal, goals, number_of_goals_along_stack = self._sample_goal(goal, return_extra_info=True)
-        # self.target_goal = self.sample_continuous_goal_from_binary_goal(goal)
+    def reset(self, goal=None, biased_init=True, external=True):
+        if external:
+            self.target_goal, goals, number_of_goals_along_stack = self._sample_goal(goal, return_extra_info=True)
+        else:
+            self.target_goal = goal
 
         self.sim.set_state(self.initial_state)
         if biased_init:
@@ -343,8 +343,8 @@ class FetchManipulateEnvContinuous(robot_env.RobotEnv):
 
         return obs
 
-    def reset_goal(self, goal=None, biased_init=True):
-        return self.reset(goal=goal, biased_init=biased_init)
+    def reset_goal(self, goal=None, biased_init=True, external=True):
+        return self.reset(goal=goal, biased_init=biased_init, external=external)
 
 
     def _sample_goal(self, goal=None, return_extra_info=False):

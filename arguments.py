@@ -55,6 +55,10 @@ def get_args():
     # the testing arguments
     parser.add_argument('--n-test-rollouts', type=int, default=1, help='the number of tests')
 
+    parser.add_argument('--n-bootstrapping-epochs', type=int, default=5, help='Number of epochs during which random exploration is conducted')
+    parser.add_argument('--external-goal-generation-ratio', type=float, default=0., help='test')
+    parser.add_argument('--len-goal-buffer', type=int, default=500000, help='length of goal buffer')
+    
     args = parser.parse_args()
 
     return args

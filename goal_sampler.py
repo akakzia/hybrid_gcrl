@@ -15,9 +15,14 @@ class GoalSampler:
         self.n_classes = 3
         self.goal_dim = args.env_params['goal']
 
+        self.discovered_goals = []
+        self.len_goal_buffer = args.len_goal_buffer
+
+        self.external_goal_generation_ratio = args.external_goal_generation_ratio
+
         self.init_stats()
 
-    def sample_goal(self, n_goals=2, evaluation=False):
+    def sample_goal(self, n_goals=2, bootstrapping=False, evaluation=False):
         """
         Sample n_goals goals to be targeted during rollouts
         evaluation controls whether or not to sample the goal uniformly or according to curriculum
@@ -26,32 +31,32 @@ class GoalSampler:
             return np.array([0, 1, 2])
         else:
             # decide whether to self evaluate
-            self_eval = False
-            goals = np.random.choice(range(self.n_classes), size=n_goals)
+            external = np.random.uniform() < self.external_goal_generation_ratio
+            if external: 
+                goals = np.random.choice(range(self.n_classes), size=n_goals)
+                
+                return goals, external 
 
-        return goals, self_eval
+            if bootstrapping:
+                goals = np.random.choice(range(self.n_classes), size=n_goals)
+            else:
+                ids = np.random.choice(np.arange(len(self.discovered_goals)), size=n_goals)
+                goals = np.array(self.discovered_goals)[ids]
+
+            return goals, external
     
     def update(self, episodes):
         """ Update the successes and failures """
         all_episodes = MPI.COMM_WORLD.gather(episodes, root=0)
 
         if self.rank == 0:
-            all_episode_list = []
-            for eps in all_episodes:
-                all_episode_list += eps
+            self.discovered_goals += [ag for eps in all_episodes for e in eps for ag in np.unique(np.around(e['ag'], decimals=3), axis=0)]
             
-            for e in all_episode_list:
-                if e['self_eval']:
-                    if (e['rewards'][-1] == 5.):
-                        success = 1
-                    else:
-                        success = 0
-                    self.successes_and_failures[e['goal_class']].append(success)
-                    # Make sure not to excede queue length
-                    if len(self.successes_and_failures[e['goal_class']]) > QUEUE_LENGTH:
-                        self.successes_and_failures = self.successes_and_failures[-QUEUE_LENGTH:]
-
+        self.sync()
         return episodes
+
+    def sync(self):
+        self.discovered_goals = MPI.COMM_WORLD.bcast(self.discovered_goals[-self.len_goal_buffer:], root=0)
 
     def init_stats(self):
         self.stats = dict()

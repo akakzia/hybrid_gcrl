@@ -80,43 +80,50 @@ def launch(args):
         # log current epoch
         if rank == 0: logger.info('\n\nEpoch #{}'.format(epoch))
 
+        bootstrapping = epoch < args.n_bootstrapping_epochs and args.external_goal_generation_ratio < 1.
+
         # Cycles loop
         for _ in range(args.n_cycles):
-
             # Sample goals
             t_i = time.time()
-            goals, self_eval = goal_sampler.sample_goal(n_goals=args.num_rollouts_per_mpi, evaluation=False) # These goals are overridden in rollout_worker
+            goals, external = goal_sampler.sample_goal(n_goals=args.num_rollouts_per_mpi,
+                                                        bootstrapping=bootstrapping)
             time_dict['goal_sampler'] += time.time() - t_i
 
             # Environment interactions
             t_i = time.time()
             episodes = rollout_worker.generate_rollout(goals=goals,  # list of goal configurations
-                                                       self_eval=self_eval,
+                                                       external=external,
+                                                       bootstrapping=bootstrapping,
                                                        true_eval=False,  # these are not offline evaluation episodes
                                                        animated=False,
                                                       )
             time_dict['rollout'] += time.time() - t_i
 
             # Goal Sampler updates
-            # t_i = time.time()
-            # episodes = goal_sampler.update(episodes)
-            # time_dict['gs_update'] += time.time() - t_i
+            t_i = time.time()
+            if args.external_goal_generation_ratio < 1.:
+                episodes = goal_sampler.update(episodes)
+            time_dict['gs_update'] += time.time() - t_i
 
             # Storing episodes
             t_i = time.time()
-            policy.store(episodes)
+            if not bootstrapping:
+                policy.store(episodes)
             time_dict['store'] += time.time() - t_i
 
             # Updating observation normalization
             t_i = time.time()
-            for e in episodes:
-                policy._update_normalizer(e)
+            if not bootstrapping:
+                for e in episodes:
+                    policy._update_normalizer(e)
             time_dict['norm_update'] += time.time() - t_i
 
             # Policy updates
             t_i = time.time()
-            for _ in range(args.n_batches):
-                policy.train()
+            if not bootstrapping:
+                for _ in range(args.n_batches):
+                    policy.train()
             time_dict['policy_train'] += time.time() - t_i
             episode_count += args.num_rollouts_per_mpi * args.num_workers
 
@@ -130,7 +137,7 @@ def launch(args):
             eval_goals = []
             eval_goals = goal_sampler.sample_goal(evaluation=True)
             episodes = rollout_worker.generate_rollout(goals=eval_goals,
-                                                       self_eval=self_eval,
+                                                       external=True, 
                                                        true_eval=True,  # this is offline evaluations
                                                        biased_init=False, 
                                                        animated=False

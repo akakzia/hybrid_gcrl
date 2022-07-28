@@ -26,9 +26,6 @@ class ReplayBuffer:
                        'actions': np.empty([self.size, self.T, self.env_params['action']]),
                        }
 
-        self.goal_ids = np.zeros([self.size])  # contains id of achieved goal (discovery rank)
-        self.goal_ids.fill(np.nan)
-
         # thread lock
         self.lock = threading.Lock()
 
@@ -44,7 +41,6 @@ class ReplayBuffer:
                 self.buffer['ag'][idxs[i]] = e['ag']
                 self.buffer['g'][idxs[i]] = e['g']
                 self.buffer['actions'][idxs[i]] = e['act']
-                self.goal_ids[idxs[i]] = e['goal_class']
 
     # sample the data from the replay buffer
     def sample(self, batch_size):

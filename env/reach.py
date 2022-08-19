@@ -85,7 +85,7 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
                                             goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
                             for i in range(nb_fingers)])
 
-        return np.sum(distances < 0.02)
+        return np.sum(distances < 0.01)
 
     # RobotEnv methods
     # ----------------------------
@@ -144,8 +144,15 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
         return goal.flatten()
 
     def _is_success(self, achieved_goal, desired_goal):
-        d = goal_distance(achieved_goal, desired_goal)
-        return (d < self.distance_threshold).astype(np.float32)
+        # d = goal_distance(achieved_goal, desired_goal)
+        # return (d < self.distance_threshold).astype(np.float32)
+        nb_features_per_finger = 3
+        nb_fingers = 5
+        distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
+                                             desired_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
+                            for i in range(nb_fingers)])
+
+        return np.sum(distances < 0.01) == nb_fingers
 
     def _render_callback(self):
         # Visualize targets.

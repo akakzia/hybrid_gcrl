@@ -14,7 +14,7 @@ class her_sampler:
             self.future_p = 0
         self.reward_func = reward_func
         self.multi_criteria_her = args.multi_criteria_her
-        self.obj_ind = np.array([np.arange(i * 3, (i + 1) * 3) for i in range(args.n_blocks)])
+        self.obj_ind = np.array([np.arange(i * 3, (i + 1) * 3) for i in range(args.env_params['nb_objects'])])
 
     def sample_her_transitions(self, episode_batch, batch_size_in_transitions):
         T = episode_batch['actions'].shape[1]

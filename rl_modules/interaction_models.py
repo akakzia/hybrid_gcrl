@@ -152,7 +152,7 @@ class InSemantic:
         self.dim_object = 15
         self.dim_goal = env_params['goal']
         self.dim_act = env_params['action']
-        self.nb_objects = args.n_blocks
+        self.nb_objects = env_params['nb_objects']
 
         self.q1_pi_tensor = None
         self.q2_pi_tensor = None
@@ -163,7 +163,7 @@ class InSemantic:
 
         # Process indexes for graph construction
         self.edges, self.incoming_edges, _ = get_graph_structure(self.nb_objects)
-        goal_ids_per_object = [np.arange(i * 3, (i + 1) * 3) for i in range(args.n_blocks)]
+        goal_ids_per_object = [np.arange(i * 3, (i + 1) * 3) for i in range(self.nb_objects)]
         perm = permutations(np.arange(self.nb_objects), 2)
         self.predicate_ids = []
         for p in perm:

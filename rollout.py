@@ -18,7 +18,6 @@ class RolloutWorker:
         self.policy = policy
         self.env_params = args.env_params
         self.goal_sampler = goal_sampler
-        self.continuous = args.algo == 'continuous'
         self.args = args
 
     def generate_rollout(self, goals, external, true_eval, bootstrapping=False,biased_init=False, animated=False):
@@ -85,7 +84,7 @@ class RolloutWorker:
             episodes.append(episode)
 
             # if not eval, make sure that no block has fallen. If so (or success), then reset
-            fallen = at_least_one_fallen(obs, self.args.n_blocks)
+            fallen = at_least_one_fallen(obs, self.args.env_params['nb_objects'])
             if not true_eval and (fallen or success):
                 observation = self.env.unwrapped.reset_goal(goal=np.array(goals[i]), biased_init=biased_init, external=external)
 

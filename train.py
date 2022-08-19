@@ -20,7 +20,7 @@ def get_env_params(env):
     # close the environment
     params = {'obs': obs['observation'].shape[0], 'goal': obs['desired_goal'].shape[0],
               'action': env.action_space.shape[0], 'action_max': env.action_space.high[0],
-              'max_timesteps': env._max_episode_steps}
+              'nb_objects': env.num_blocks, 'max_timesteps': env._max_episode_steps}
     return params
 
 def launch(args):
@@ -32,7 +32,6 @@ def launch(args):
     t_total_init = time.time()
 
     # Make the environment
-    args.env_name = 'FetchManipulate{}ObjectsContinuous-v0'.format(args.n_blocks)
     env = gym.make(args.env_name)
 
     # set random seeds for reproducibility
@@ -54,10 +53,7 @@ def launch(args):
     goal_sampler = GoalSampler(args)
 
     # Initialize RL Agent
-    if args.agent == "SAC":
-        policy = RLAgent(args, env.compute_reward, goal_sampler)
-    else:
-        raise NotImplementedError
+    policy = RLAgent(args, env.compute_reward, goal_sampler)
 
     # Initialize Rollout Worker
     rollout_worker = RolloutWorker(env, policy, goal_sampler,  args)

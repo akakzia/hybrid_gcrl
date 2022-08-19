@@ -12,7 +12,6 @@ class GoalSampler:
     def __init__(self, args):
         self.num_rollouts_per_mpi = args.num_rollouts_per_mpi
         self.rank = MPI.COMM_WORLD.Get_rank()
-        self.n_classes = 3
         self.goal_dim = args.env_params['goal']
 
         self.discovered_goals = []
@@ -28,17 +27,19 @@ class GoalSampler:
         evaluation controls whether or not to sample the goal uniformly or according to curriculum
         """
         if evaluation:
-            return np.array([0, 1, 2])
+            return np.array([None for _ in range(n_goals)])
         else:
-            # decide whether to self evaluate
+            # Decide whether to use extrinsic goals or intrinsic goals
             external = np.random.uniform() < self.external_goal_generation_ratio
-            if external: 
-                goals = np.random.choice(range(self.n_classes), size=n_goals)
+            # Goals will be generated externally in the env interface
+            # Agent will perform a bootstrapping phase where it performs arbitrary action independent of goals
+            # So goals here are not important
+            if external or bootstrapping: 
+                goals = np.array([None for _ in range(n_goals)])
                 
                 return goals, external 
 
-            if bootstrapping:
-                goals = np.random.choice(range(self.n_classes), size=n_goals)
+            # Goals are generated internally using the list of discovere goals
             else:
                 ids = np.random.choice(np.arange(len(self.discovered_goals)), size=n_goals)
                 goals = np.array(self.discovered_goals)[ids]
@@ -61,23 +62,19 @@ class GoalSampler:
     def init_stats(self):
         self.stats = dict()
         # Number of classes of eval
-        for i in np.arange(1, self.n_classes+1):
-            self.stats['Eval_SR_{}'.format(i)] = []
-            self.stats['Av_Rew_{}'.format(i)] = []
         self.stats['epoch'] = []
         self.stats['episodes'] = []
+        self.stats['av_rew'] = []
         self.stats['global_sr'] = []
         keys = ['goal_sampler', 'rollout', 'gs_update', 'store', 'norm_update',
                 'policy_train', 'eval', 'epoch', 'total']
         for k in keys:
             self.stats['t_{}'.format(k)] = []
 
-    def save(self, epoch, episode_count, av_res, av_rew, global_sr, time_dict):
+    def save(self, epoch, episode_count, av_rew, global_sr, time_dict):
         self.stats['epoch'].append(epoch)
         self.stats['episodes'].append(episode_count)
         self.stats['global_sr'].append(global_sr)
         for k in time_dict.keys():
             self.stats['t_{}'.format(k)].append(time_dict[k])
-        for g_id in np.arange(1, len(av_res) + 1):
-            self.stats['Eval_SR_{}'.format(g_id)].append(av_res[g_id-1])
-            self.stats['Av_Rew_{}'.format(g_id)].append(av_rew[g_id-1])
+        self.stats['av_rew'].append(av_rew)

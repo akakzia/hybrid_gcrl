@@ -48,3 +48,32 @@ register(id='FetchManipulate3ObjectsContinuous-v0',
                  'model_path': 'fetch/stack3_with_targets.xml'
                  },
          max_episode_steps=100,)
+
+register(id='FetchManipulate1ObjectContinuous-v0',
+         entry_point='env.envs:FetchManipulateEnvContinuous',
+         kwargs={'reward_type': 'incremental',
+                 'num_blocks': 1,
+                 'model_path': 'fetch/stack1_with_targets.xml'
+                 },
+         max_episode_steps=50,) 
+
+# Hand
+register(
+id='HandReach-v1',
+entry_point='env.reach:HandReachEnv',
+kwargs={
+        'reward_type': 'sparse'
+        },
+max_episode_steps=50,
+)
+
+register(
+id='HandManipulateBlockRotateZ-v1',
+entry_point='env.envs:HandBlockEnv',
+kwargs={
+        'reward_type': 'sparse',
+        'target_position': 'ignore',
+        'target_rotation': 'z'
+        },
+max_episode_steps=100,
+)

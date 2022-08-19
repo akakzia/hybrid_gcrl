@@ -20,7 +20,11 @@ def get_env_params(env):
     # close the environment
     params = {'obs': obs['observation'].shape[0], 'goal': obs['desired_goal'].shape[0],
               'action': env.action_space.shape[0], 'action_max': env.action_space.high[0],
-              'nb_objects': env.num_blocks, 'max_timesteps': env._max_episode_steps}
+              'max_timesteps': env._max_episode_steps}
+    try:
+        params['nb_objects'] = env.num_blocks
+    except AttributeError:
+        params['nb_objects'] = 1
     return params
 
 def launch(args):
@@ -51,6 +55,13 @@ def launch(args):
     args.env_params = get_env_params(env)
 
     goal_sampler = GoalSampler(args)
+
+    # Select policy architecture according to the environment
+    # If multi-block manipulation, than choose GNN-based network
+    if args.env_name == 'FetchManipulate3ObjectsContinuous-v0':
+        args.architecture = 'interaction_network'
+    else:
+        args.architecture = 'flat'
 
     # Initialize RL Agent
     policy = RLAgent(args, env.compute_reward, goal_sampler)
@@ -130,17 +141,14 @@ def launch(args):
             if rank==0: logger.info('\tRunning eval ..')
             # Performing evaluations
             t_i = time.time()
-            eval_goals = []
-            eval_goals = goal_sampler.sample_goal(evaluation=True)
+            eval_goals = goal_sampler.sample_goal(n_goals=args.n_test_rollouts, evaluation=True)
             episodes = rollout_worker.generate_rollout(goals=eval_goals,
                                                        external=True, 
                                                        true_eval=True,  # this is offline evaluations
-                                                       biased_init=False, 
                                                        animated=False
                                                        )
-
-            results = np.array([e['success'][-1].astype(np.float32) for e in episodes])
-            rewards = np.array([e['rewards'][-1] for e in episodes])
+            results = np.array(np.mean([e['success'][-1].astype(np.float32) for e in episodes]))
+            rewards = np.array(np.mean([e['rewards'][-1] for e in episodes]))
             all_results = MPI.COMM_WORLD.gather(results, root=0)
             all_rewards = MPI.COMM_WORLD.gather(rewards, root=0)
             time_dict['eval'] += time.time() - t_i
@@ -151,7 +159,7 @@ def launch(args):
                 av_res = np.array(all_results).mean(axis=0)
                 av_rewards = np.array(all_rewards).mean(axis=0)
                 global_sr = np.mean(av_res)
-                log_and_save(goal_sampler, epoch, episode_count, av_res, av_rewards, global_sr, time_dict)
+                log_and_save(goal_sampler, epoch, episode_count, av_rewards, global_sr, time_dict)
 
                 # Saving policy models
                 if epoch % args.save_freq == 0:
@@ -159,8 +167,8 @@ def launch(args):
                 if rank==0: logger.info('\tEpoch #{}: SR: {}'.format(epoch, global_sr))
 
 
-def log_and_save( goal_sampler, epoch, episode_count, av_res, av_rew, global_sr, time_dict):
-    goal_sampler.save(epoch, episode_count, av_res, av_rew, global_sr, time_dict)
+def log_and_save( goal_sampler, epoch, episode_count, av_rew, global_sr, time_dict):
+    goal_sampler.save(epoch, episode_count, av_rew, global_sr, time_dict)
     for k, l in goal_sampler.stats.items():
         logger.record_tabular(k, l[-1])
     logger.dump_tabular()

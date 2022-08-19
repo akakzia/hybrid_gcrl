@@ -16,7 +16,7 @@ def get_args():
     parser.add_argument('--num-workers', type=int, default=MPI.COMM_WORLD.Get_size(), help='the number of cpus to collect samples')
     parser.add_argument('--cuda', action='store_true', help='if use gpu do the acceleration')
     # the environment arguments
-    parser.add_argument('--env-name', type=str, default='FetchManipulate3ObjectsContinuous-v0', help='select the environment name')
+    parser.add_argument('--env-name', type=str, default='FetchManipulate1ObjectContinuous-v0', help='select the environment name')
     # the training arguments
     parser.add_argument('--n-epochs', type=int, default=1000, help='the number of epochs to train the agent')
     parser.add_argument('--n-cycles', type=int, default=50, help='the times to collect samples per epoch')
@@ -24,7 +24,7 @@ def get_args():
     parser.add_argument('--num-rollouts-per-mpi', type=int, default=2, help='the rollouts per mpi')
     parser.add_argument('--batch-size', type=int, default=256, help='the sample batch size')
     # the replay arguments
-    parser.add_argument('--multi-criteria-her', type=bool, default=True, help='test')
+    parser.add_argument('--multi-criteria-her', type=bool, default=False, help='test')
     parser.add_argument('--replay-strategy', type=str, default='future', help='the HER strategy')
     parser.add_argument('--replay-k', type=int, default=4, help='ratio to be replace')
     parser.add_argument('--reward-type', type=str, default='per_object', help='per_object, per_relation, per_predicate or sparse')
@@ -48,10 +48,8 @@ def get_args():
     # the preprocessing arguments
     parser.add_argument('--clip-obs', type=float, default=5, help='the clip ratio')
     parser.add_argument('--clip-range', type=float, default=5, help='the clip range')
-    # the gnns arguments
-    parser.add_argument('--architecture', type=str, default='interaction_network', help='[full_gn, interaction_network, relation_network, deep_sets, flat]')
     # the testing arguments
-    parser.add_argument('--n-test-rollouts', type=int, default=1, help='the number of tests')
+    parser.add_argument('--n-test-rollouts', type=int, default=10, help='the number of tests')
 
     parser.add_argument('--n-bootstrapping-epochs', type=int, default=5, help='Number of epochs during which random exploration is conducted')
     parser.add_argument('--external-goal-generation-ratio', type=float, default=0., help='test')

@@ -1,4 +1,6 @@
+import numpy as np
 from env import fetch_manipulate_env, fetch_manipulate_env_continuous
+from env import reach, manipulate
 from gym import utils
 
 PREDICATE_THRESHOLD = 0.09  # The minimal threshold to consider two blocks close to each other
@@ -28,7 +30,6 @@ class FetchManipulateEnvContinuous(fetch_manipulate_env_continuous.FetchManipula
             'robot0:slide1': 0.48,
             'robot0:slide2': 0.0,
             'object0:joint': [1.25, 0.53, 0.4, 1., 0., 0., 0.],
-            'object1:joint': [1.25, 0.53, 0.46, 1., 0., 0., 0.],
         }
         fetch_manipulate_env_continuous.FetchManipulateEnvContinuous.__init__(
             self, model_path, num_blocks=num_blocks, block_gripper=False, n_substeps=20,
@@ -38,3 +39,12 @@ class FetchManipulateEnvContinuous(fetch_manipulate_env_continuous.FetchManipula
             predicates=['close', 'above'], goals_on_stack_probability=0.6
         )
         utils.EzPickle.__init__(self)
+
+class HandBlockEnv(manipulate.ManipulateEnv, utils.EzPickle):
+    def __init__(self, target_position='random', target_rotation='xyz', reward_type='sparse'):
+        utils.EzPickle.__init__(self, target_position, target_rotation, reward_type)
+        manipulate.ManipulateEnv.__init__(self,
+            model_path='hand/manipulate_block.xml', target_position=target_position,
+            target_rotation=target_rotation,
+            target_position_range=np.array([(-0.04, 0.04), (-0.06, 0.02), (0.0, 0.06)]),
+            reward_type=reward_type)

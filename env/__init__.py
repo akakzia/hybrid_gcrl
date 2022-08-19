@@ -59,7 +59,7 @@ register(id='FetchManipulate1ObjectContinuous-v0',
 
 # Hand
 register(
-id='HandReach-v1',
+id='HandReach-v2',
 entry_point='env.reach:HandReachEnv',
 kwargs={
         'reward_type': 'sparse'

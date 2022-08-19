@@ -73,11 +73,19 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
     # ----------------------------
 
     def compute_reward(self, achieved_goal, goal, info):
-        d = goal_distance(achieved_goal, goal)
-        if self.reward_type == 'sparse':
-            return (d < self.distance_threshold).astype(np.float32)
-        else:
-            return -d
+        # d = goal_distance(achieved_goal, goal)
+        # if self.reward_type == 'sparse':
+        #     return (d < self.distance_threshold).astype(np.float32)
+        # else:
+        #     return -d
+        """ Given the achieved goal and the goal, computes the reward for the HandReach-v0 environment """
+        nb_features_per_finger = 3
+        nb_fingers = 5
+        distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
+                                            goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
+                            for i in range(nb_fingers)])
+
+        return np.sum(distances < 0.02)
 
     # RobotEnv methods
     # ----------------------------

@@ -13,41 +13,43 @@ scratch = os.environ['SCRATCH']
 # Make top level directories
 mkdir_p(job_directory)
 
-ratios = [0, 0.2, 0.5, 0.8]
+envs = ['FetchManipulate1ObjectContinuous-v0', 'HandReach-v1']
+ratios = [1.]
 nb_seeds = 1
 
 for i in range(nb_seeds):
     for ratio in ratios:
-        job_file = os.path.join(job_directory, f"continuous_emgep={ratio}%.slurm")
+        for env in envs:
+            job_file = os.path.join(job_directory, f"hgep={ratio}%.slurm")
 
-        with open(job_file, 'w') as fh:
-            fh.writelines("#!/bin/bash\n")
-            fh.writelines("#SBATCH --account=kcr@v100\n")
-            fh.writelines(f"#SBATCH --job-name=continuous_emgep={ratio}\n")
-            fh.writelines("#SBATCH --qos=qos_gpu-t3\n")
-            fh.writelines(f"#SBATCH --output=continuous_emgep={ratio}%_%j.out\n")
-            fh.writelines(f"#SBATCH --error=continuous_emgep={ratio}%_%j.out\n")
-            fh.writelines("#SBATCH --time=19:59:59\n")
-            fh.writelines("#SBATCH --ntasks=24\n")
-            fh.writelines("#SBATCH --ntasks-per-node=1\n")
-            fh.writelines("#SBATCH --gres=gpu:1\n")
-            fh.writelines("#SBATCH --hint=nomultithread\n")
-            fh.writelines("#SBATCH --array=0-0\n")
+            with open(job_file, 'w') as fh:
+                fh.writelines("#!/bin/bash\n")
+                fh.writelines("#SBATCH --account=kcr@v100\n")
+                fh.writelines(f"#SBATCH --job-name={env}_hgep={ratio}\n")
+                fh.writelines("#SBATCH --qos=qos_gpu-t3\n")
+                fh.writelines(f"#SBATCH --output={env}_hgep={ratio}%_%j.out\n")
+                fh.writelines(f"#SBATCH --error={env}_hgep={ratio}%_%j.out\n")
+                fh.writelines("#SBATCH --time=19:59:59\n")
+                fh.writelines("#SBATCH --ntasks=24\n")
+                fh.writelines("#SBATCH --ntasks-per-node=1\n")
+                fh.writelines("#SBATCH --gres=gpu:1\n")
+                fh.writelines("#SBATCH --hint=nomultithread\n")
+                fh.writelines("#SBATCH --array=0-0\n")
 
 
-            fh.writelines("module load pytorch-gpu/py3/1.4.0\n")
+                fh.writelines("module load pytorch-gpu/py3/1.4.0\n")
 
-            fh.writelines("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/gpfslocalsup/spack_soft/mesa/18.3.6/gcc-9.1.0-bikg6w3g2be2otzrmyy43zddre4jahme/lib\n")
-            fh.writelines("export LIBRARY_PATH=$LIBRARY_PATH:/gpfslocalsup/spack_soft/mesa/18.3.6/gcc-9.1.0-bikg6w3g2be2otzrmyy43zddre4jahme/lib\n")
-            fh.writelines("export CPATH=$CPATH:/gpfslocalsup/spack_soft/mesa/18.3.6/gcc-9.1.0-bikg6w3g2be2otzrmyy43zddre4jahme/include\n")
-            fh.writelines("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/linkhome/rech/genisi01/uqy56ga/.mujoco/mujoco200/bin\n")
-            fh.writelines("export OMPI_MCA_opal_warn_on_missing_libcuda=0\n")
-            fh.writelines("export OMPI_MCA_btl_openib_allow_ib=1\n")
-            fh.writelines("export OMPI_MCA_btl_openib_warn_default_gid_prefix=0\n")
-            fh.writelines("export OMPI_MCA_mpi_warn_on_fork=0\n")
+                fh.writelines("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/gpfslocalsup/spack_soft/mesa/18.3.6/gcc-9.1.0-bikg6w3g2be2otzrmyy43zddre4jahme/lib\n")
+                fh.writelines("export LIBRARY_PATH=$LIBRARY_PATH:/gpfslocalsup/spack_soft/mesa/18.3.6/gcc-9.1.0-bikg6w3g2be2otzrmyy43zddre4jahme/lib\n")
+                fh.writelines("export CPATH=$CPATH:/gpfslocalsup/spack_soft/mesa/18.3.6/gcc-9.1.0-bikg6w3g2be2otzrmyy43zddre4jahme/include\n")
+                fh.writelines("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/linkhome/rech/genisi01/uqy56ga/.mujoco/mujoco200/bin\n")
+                fh.writelines("export OMPI_MCA_opal_warn_on_missing_libcuda=0\n")
+                fh.writelines("export OMPI_MCA_btl_openib_allow_ib=1\n")
+                fh.writelines("export OMPI_MCA_btl_openib_warn_default_gid_prefix=0\n")
+                fh.writelines("export OMPI_MCA_mpi_warn_on_fork=0\n")
 
-            fh.writelines(f"srun python -u -B train.py --algo 'continuous' --n-blocks 3 --n-epochs 200 --n-cycles 50 --n-batches 30 --external-goal-generation-ratio {ratio}--save-dir 'continuous_emgep={ratio}/' 2>&1 ")
+                fh.writelines(f"srun python -u -B train.py --env-name {env} --n-epochs 200 --n-cycles 50 --n-batches 30 --external-goal-generation-ratio {ratio} --save-dir '{env}_hgep={ratio}/' 2>&1 ")
 
-        os.system("sbatch %s" % job_file)
-        sleep(1)
+            os.system("sbatch %s" % job_file)
+            sleep(1)
         

@@ -16,20 +16,13 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 plt.rcParams['figure.constrained_layout.use'] = True
 
-colors = [[0, 0.447, 0.7410], [0.85, 0.325, 0.098],  [0.466, 0.674, 0.188], [0.929, 0.694, 0.125],
-          [0.494, 0.1844, 0.556],[0.3010, 0.745, 0.933], [137/255,145/255,145/255],
-          [0.466, 0.674, 0.8], [0.929, 0.04, 0.125],
-          [0.3010, 0.245, 0.33], [0.635, 0.078, 0.184], [0.35, 0.78, 0.504]]
+cmap = plt.get_cmap('tab20b')
+colors = np.array(cmap.colors)[[2, 0, 5, 4, 8, 13]]
 
-# [[0, 0.447, 0.7410], [0.466, 0.674, 0.188], [0.929, 0.694, 0.125],  # c2[0.85, 0.325, 0.098],[0.85, 0.325, 0.098],
-#  [0.494, 0.1844, 0.556], [209 / 255, 70 / 255, 70 / 255], [137 / 255, 145 / 255, 145 / 255],  # [0.3010, 0.745, 0.933],
-#  [0.466, 0.674, 0.188], [0.929, 0.694, 0.125],
-#  [0.3010, 0.745, 0.933], [0.635, 0.078, 0.184]]
-
-RESULTS_PATH = '/home/ahmed/Documents/final_year/ALOE2022/rlgraph/rebuttal_results_semantic/'
-SAVE_PATH = '/home/ahmed/Documents/final_year/ALOE2022/rlgraph/plots/'
-TO_PLOT = ['semantic_goals']
-
+RESULTS_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/results'
+SAVE_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/plots/'
+# TO_PLOT = ['FetchManipulate1ObjectContinuous-v0']
+TO_PLOT = ['HandReach-v2']
 NB_CLASSES = 11 # 12 for 5 blocks
 
 LINE = 'mean'
@@ -44,9 +37,9 @@ ALPHA_TEST = 0.05
 MARKERS = ['o', 'v', 's', 'P', 'D', 'X', "*", 'v', 's', 'p', 'P', '1']
 FREQ = 5
 NB_BUCKETS = 10
-NB_EPS_PER_EPOCH = 2400
+NB_EPS_PER_EPOCH = 1900
 NB_VALID_GOALS = 35
-LAST_EP = 165
+LAST_EP = 50
 LIM = NB_EPS_PER_EPOCH * LAST_EP / 1000 + 5
 line, err_min, err_plus = get_stat_func(line=LINE, err=ERR)
 COMPRESSOR = CompressPDF(4)
@@ -269,20 +262,19 @@ def plot_sr_av_all(max_len, experiment_path):
     save_fig(path=SAVE_PATH + 'per_class.pdf', artists=artists)
 
 
-def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=None, ref='with_init'):
+def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=None):
     if conditions is None:
         conditions = os.listdir(experiment_path)
     sr = np.zeros([max_seeds, len(conditions), LAST_EP + 1 ])
     sr.fill(np.nan)
     for i_cond, cond in enumerate(conditions):
-        if cond == ref:
-            ref_id = i_cond
         cond_path = experiment_path + cond + '/'
         list_runs = sorted(os.listdir(cond_path))
         for i_run, run in enumerate(list_runs):
             run_path = cond_path + run + '/'
             data_run = pd.read_csv(run_path + 'progress.csv')
-            all_sr = np.mean(np.array([data_run['Eval_SR_{}'.format(i+1)][:LAST_EP + 1] for i in range(NB_CLASSES)]), axis=0)
+            # all_sr = np.mean(np.array([data_run['Eval_SR_{}'.format(i+1)][:LAST_EP + 1] for i in range(NB_CLASSES)]), axis=0)
+            all_sr = np.array(data_run['sr_internal'][:LAST_EP + 1])
             sr[i_run, i_cond, :all_sr.size] = all_sr.copy()
 
 
@@ -298,7 +290,7 @@ def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=Non
                                # xlabel='Epochs',
                                ylabel='Success Rate',
                                xlim=[-1, LIM],
-                               ylim=[-0.02, 1 -0.02 + 0.04 * (len(conditions) + 1)])
+                               ylim=[-0.02, 1 -0.02 + 0.04 ])
 
     for i in range(len(conditions)):
         plt.plot(x_eps, sr_per_cond_stats[i, x, 0], color=colors[i], marker=MARKERS[i], markersize=MARKERSIZE, linewidth=LINEWIDTH)
@@ -307,8 +299,8 @@ def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=Non
         labels = conditions
     leg = plt.legend(labels,
                      loc='upper center',
-                     bbox_to_anchor=(0.5, 1.15),
-                     ncol=5,
+                     bbox_to_anchor=(0.5, 1.2),
+                     ncol=3,
                      fancybox=True,
                      shadow=True,
                      prop={'size': 50, 'weight': 'bold'},
@@ -321,25 +313,25 @@ def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=Non
         plt.fill_between(x_eps, sr_per_cond_stats[i, x, 1], sr_per_cond_stats[i, x, 2], color=colors[i], alpha=ALPHA)
     
     # compute p value wrt ref id
-    p_vals = dict()
-    for i_cond in range(len(conditions)):
-        if i_cond != ref_id:
-            p_vals[i_cond] = []
-            for i in x:
-                ref_inds = np.argwhere(~np.isnan(sr[:, ref_id, i])).flatten()
-                other_inds = np.argwhere(~np.isnan(sr[:, i_cond, i])).flatten()
-                if ref_inds.size > 1 and other_inds.size > 1:
-                    ref = sr[:, ref_id, i][ref_inds]
-                    other = sr[:, i_cond, i][other_inds]
-                    p_vals[i_cond].append(ttest_ind(ref, other, equal_var=False)[1])
-                else:
-                    p_vals[i_cond].append(1)
+    # p_vals = dict()
+    # for i_cond in range(len(conditions)):
+    #     if i_cond != ref_id:
+    #         p_vals[i_cond] = []
+    #         for i in x:
+    #             ref_inds = np.argwhere(~np.isnan(sr[:, ref_id, i])).flatten()
+    #             other_inds = np.argwhere(~np.isnan(sr[:, i_cond, i])).flatten()
+    #             if ref_inds.size > 1 and other_inds.size > 1:
+    #                 ref = sr[:, ref_id, i][ref_inds]
+    #                 other = sr[:, i_cond, i][other_inds]
+    #                 p_vals[i_cond].append(ttest_ind(ref, other, equal_var=False)[1])
+    #             else:
+    #                 p_vals[i_cond].append(1)
                     
-    for i_cond in range(len(conditions)):
-        if i_cond != ref_id:
-            inds_sign = np.argwhere(np.array(p_vals[i_cond]) < ALPHA_TEST).flatten()
-            if inds_sign.size > 0:
-                plt.scatter(x=x_eps[inds_sign], y=np.ones([inds_sign.size]) - 0.04 + 0.05 * i_cond, marker='*', color=colors[i_cond], s=1300)
+    # for i_cond in range(len(conditions)):
+    #     if i_cond != ref_id:
+    #         inds_sign = np.argwhere(np.array(p_vals[i_cond]) < ALPHA_TEST).flatten()
+    #         if inds_sign.size > 0:
+    #             plt.scatter(x=x_eps[inds_sign], y=np.ones([inds_sign.size]) - 0.04 + 0.05 * i_cond, marker='*', color=colors[i_cond], s=1300)
 
     ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
     plt.grid()
@@ -351,12 +343,12 @@ if __name__ == '__main__':
 
     for PLOT in TO_PLOT:
         print('\n\tPlotting', PLOT)
-        experiment_path = RESULTS_PATH
+        experiment_path = RESULTS_PATH + '/' + PLOT + '/'
 
         max_len, max_seeds, min_len, min_seeds = check_length_and_seeds(experiment_path=experiment_path)
 
-        conditions = [f'{s}' for s in ['full_gn', 'interaction_network_2', 'relation_network', 'deep_sets', 'flat']]
-        labels = [f'S-{s}' for s in ['GN', 'IN', 'RN', 'DS', 'Flat']]
-        get_mean_sr(experiment_path, max_len, max_seeds, conditions, labels, ref='full_gn')
+        conditions = [f'main_{PLOT}_hgep={s}' for s in [0.0, 0.05, 0.1, 0.2, 0.5, 1.0]]
+        labels = ['IMGEP'] + [f'HGEP-{s*100}%' for s in [0.05, 0.1, 0.2, 0.5]] + ['EMGEP']
+        get_mean_sr(experiment_path, max_len, max_seeds, conditions, labels)
         # plot_sr_av(max_len, experiment_path, 'flat')
         # plot_sr_av_all(max_len, experiment_path)

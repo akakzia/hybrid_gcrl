@@ -1,6 +1,7 @@
 import numpy as np
 from utils import get_idxs_per_relation
 from mpi4py import MPI
+from mpi_utils.entropy_estimators import get_h
 
 
 N_POINTS = 42
@@ -51,7 +52,7 @@ class GoalSampler:
         all_episodes = MPI.COMM_WORLD.gather(episodes, root=0)
 
         if self.rank == 0:
-            self.discovered_goals += [ag for eps in all_episodes for e in eps for ag in np.unique(np.around(e['ag'], decimals=3), axis=0)]
+            self.discovered_goals += [ag for eps in all_episodes for e in eps for ag in np.unique(np.around(e['ag'][-10:], decimals=3), axis=0)]
             
         self.sync()
         return episodes
@@ -66,6 +67,7 @@ class GoalSampler:
         self.stats['episodes'] = []
         self.stats['av_rew'] = []
         self.stats['global_sr'] = []
+        self.stats['entropy'] = []
         keys = ['goal_sampler', 'rollout', 'gs_update', 'store', 'norm_update',
                 'policy_train', 'eval', 'epoch', 'total']
         for k in keys:
@@ -78,3 +80,6 @@ class GoalSampler:
         for k in time_dict.keys():
             self.stats['t_{}'.format(k)].append(time_dict[k])
         self.stats['av_rew'].append(av_rew)
+        # Compute entropy of discovered goal distibution
+        h = get_h(np.array(self.discovered_goals), k=5)
+        self.stats['entropy'].append(h) 

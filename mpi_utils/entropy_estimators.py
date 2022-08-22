@@ -188,7 +188,7 @@ def get_h(x, k=1, norm='max', min_dist=0., workers=1):
 
     # query all points -- k+1 as query point also in initial set
     # distances, _ = kdtree.query(x, k + 1, eps=0, p=norm)
-    distances, _ = kdtree.query(x, k + 1, eps=0, p=p, workers=workers)
+    distances, _ = kdtree.query(x, k + 1, eps=0, p=p)
     distances = distances[:, -1]
 
     # enforce non-zero distances

@@ -75,15 +75,7 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
     def compute_reward(self, achieved_goal, goal, info):
         if self.reward_type == 'sparse':
             d = goal_distance(achieved_goal, goal)
-            return -(d > self.distance_threshold).astype(np.float32)
-        elif self.reward_type == 'incremental':
-            nb_features_per_finger = 3
-            nb_fingers = 5
-            distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
-                                                goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
-                                for i in range(nb_fingers)])
-
-            return np.sum(distances < 0.01)
+            return (d < self.distance_threshold).astype(np.float32)
         else: 
             raise NotImplementedError
 
@@ -147,14 +139,6 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
         if self.reward_type == 'sparse':
             d = goal_distance(achieved_goal, desired_goal)
             return (d < self.distance_threshold).astype(np.float32)
-        elif self.reward_type == 'incremental':
-            nb_features_per_finger = 3
-            nb_fingers = 5
-            distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
-                                                desired_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
-                                for i in range(nb_fingers)])
-
-            return np.sum(distances < 0.01) == nb_fingers
         else:
             raise NotImplementedError
 

@@ -13,7 +13,7 @@ scratch = os.environ['SCRATCH']
 # Make top level directories
 mkdir_p(job_directory)
 
-envs = ['HandReach-v2', 'FetchManipulate1ObjectContinuous-v0']
+envs = ['HandReach-v2']
 ratios = [1.]
 nb_seeds = 1
 

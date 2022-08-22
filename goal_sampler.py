@@ -30,8 +30,11 @@ class GoalSampler:
         if evaluation:
             # Evaluate one goal for discovered goal 
             # One goal for external goal
-            eval_intern_goal = np.array(self.discovered_goals)[np.random.choice(np.arange(len(self.discovered_goals)))]
-            return [eval_intern_goal, None]
+            try:
+                eval_intern_goal = np.array(self.discovered_goals)[np.random.choice(np.arange(len(self.discovered_goals)))]
+                return [eval_intern_goal, None]
+            except ValueError:
+                return [None, None]
         else:
             # Decide whether to use extrinsic goals or intrinsic goals
             external = np.random.uniform() < self.external_goal_generation_ratio

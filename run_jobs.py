@@ -13,7 +13,7 @@ scratch = os.environ['SCRATCH']
 # Make top level directories
 mkdir_p(job_directory)
 
-envs = ['HandReach-v2']
+envs = ['HandReach-v2', 'FetchManipulate1ObjectContinuous-v0']
 ratios = [1.]
 nb_seeds = 1
 
@@ -26,11 +26,11 @@ for i in range(nb_seeds):
                 fh.writelines("#!/bin/bash\n")
                 fh.writelines("#SBATCH --account=kcr@v100\n")
                 fh.writelines(f"#SBATCH --job-name={env}_hgep={ratio}\n")
-                fh.writelines("#SBATCH --qos=qos_gpu-dev\n")
-                fh.writelines(f"#SBATCH --output={env}_hgep={ratio}%_%j.out\n")
-                fh.writelines(f"#SBATCH --error={env}_hgep={ratio}%_%j.out\n")
+                fh.writelines("#SBATCH --qos=qos_gpu-t3\n")
+                fh.writelines(f"#SBATCH --output=DDPG_{env}_hgep={ratio}%_%j.out\n")
+                fh.writelines(f"#SBATCH --error=DDPG_{env}_hgep={ratio}%_%j.out\n")
                 fh.writelines("#SBATCH --time=1:59:59\n")
-                fh.writelines("#SBATCH --ntasks=24\n")
+                fh.writelines("#SBATCH --ntasks=19\n")
                 fh.writelines("#SBATCH --ntasks-per-node=1\n")
                 fh.writelines("#SBATCH --gres=gpu:1\n")
                 fh.writelines("#SBATCH --hint=nomultithread\n")
@@ -48,7 +48,7 @@ for i in range(nb_seeds):
                 fh.writelines("export OMPI_MCA_btl_openib_warn_default_gid_prefix=0\n")
                 fh.writelines("export OMPI_MCA_mpi_warn_on_fork=0\n")
 
-                fh.writelines(f"srun python -u -B train.py --env-name {env} --n-epochs 200 --n-cycles 50 --n-batches 40 --external-goal-generation-ratio {ratio} --save-dir '{env}_hgep={ratio}/' 2>&1 ")
+                fh.writelines(f"srun python -u -B train.py --env-name {env} --n-epochs 50 --n-cycles 50 --n-batches 40 --external-goal-generation-ratio {ratio} --save-dir 'DDPG_{env}_hgep={ratio}/' 2>&1 ")
 
             os.system("sbatch %s" % job_file)
             sleep(1)

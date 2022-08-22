@@ -29,7 +29,7 @@ for i in range(nb_seeds):
                 fh.writelines("#SBATCH --qos=qos_gpu-t3\n")
                 fh.writelines(f"#SBATCH --output=main_{env}_hgep={ratio}%_%j.out\n")
                 fh.writelines(f"#SBATCH --error=main_{env}_hgep={ratio}%_%j.out\n")
-                fh.writelines("#SBATCH --time=1:59:59\n")
+                fh.writelines("#SBATCH --time=5:59:59\n")
                 fh.writelines("#SBATCH --ntasks=19\n")
                 fh.writelines("#SBATCH --ntasks-per-node=1\n")
                 fh.writelines("#SBATCH --gres=gpu:1\n")
@@ -48,7 +48,7 @@ for i in range(nb_seeds):
                 fh.writelines("export OMPI_MCA_btl_openib_warn_default_gid_prefix=0\n")
                 fh.writelines("export OMPI_MCA_mpi_warn_on_fork=0\n")
 
-                fh.writelines(f"srun python -u -B train.py --env-name {env} --n-epochs 50 --n-cycles 50 --n-batches 40 --external-goal-generation-ratio {ratio} --save-dir 'main_{env}_hgep={ratio}/' 2>&1 ")
+                fh.writelines(f"srun python -u -B train.py --env-name {env} --n-epochs 51 --n-cycles 50 --n-batches 40 --external-goal-generation-ratio {ratio} --save-dir 'main_{env}_hgep={ratio}/' 2>&1 ")
 
             os.system("sbatch %s" % job_file)
             sleep(1)

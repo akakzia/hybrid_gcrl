@@ -16,7 +16,8 @@ class RolloutWorker:
         external = external or bootstrapping
         episodes = []
 
-        for i in range(goals.shape[0]):
+        for i in range(len(goals)):
+            external = True if goals[i] is None else False
             observation = self.env.unwrapped.reset_goal(goal=np.array(goals[i]), external=external)
             obs = observation['observation']
             ag = observation['achieved_goal']

@@ -39,7 +39,7 @@ def get_args():
     parser.add_argument('--freq-target_update', type=int, default=1, help='the frequency of updating the target networks')
     # the output arguments
     parser.add_argument('--evaluations', type=bool, default=True, help='do evaluation at the end of the epoch w/ frequency')
-    parser.add_argument('--save-freq', type=int, default=10, help='the interval that save the trajectory')
+    parser.add_argument('--save-freq', type=int, default=2, help='the interval that save the trajectory')
     parser.add_argument('--save-dir', type=str, default='output/', help='the path to save the models')
     # the memory arguments
     parser.add_argument('--buffer-size', type=int, default=int(1e6), help='the size of the buffer')

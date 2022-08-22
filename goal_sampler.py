@@ -28,7 +28,10 @@ class GoalSampler:
         evaluation controls whether or not to sample the goal uniformly or according to curriculum
         """
         if evaluation:
-            return np.array([None for _ in range(n_goals)])
+            # Evaluate one goal for discovered goal 
+            # One goal for external goal
+            eval_intern_goal = np.array(self.discovered_goals)[np.random.choice(np.arange(len(self.discovered_goals)))]
+            return [eval_intern_goal, None]
         else:
             # Decide whether to use extrinsic goals or intrinsic goals
             external = np.random.uniform() < self.external_goal_generation_ratio
@@ -52,7 +55,9 @@ class GoalSampler:
         all_episodes = MPI.COMM_WORLD.gather(episodes, root=0)
 
         if self.rank == 0:
-            self.discovered_goals += [ag for eps in all_episodes for e in eps for ag in np.unique(np.around(e['ag'][-10:], decimals=3), axis=0)]
+            # self.discovered_goals += [ag for eps in all_episodes for e in eps for ag in np.unique(np.around(e['ag'][-10:], decimals=3), axis=0)]
+            # Only the last achieved goal is considered as a new discovered goal.
+            self.discovered_goals += [e['ag'][-1] for eps in all_episodes for e in eps] 
             
         self.sync()
         return episodes
@@ -62,23 +67,30 @@ class GoalSampler:
 
     def init_stats(self):
         self.stats = dict()
-        # Number of classes of eval
+        self.stats['sr_internal'] = []
+        self.stats['sr_external'] = []
+        self.stats['r_internal'] = []
+        self.stats['r_external'] = []
         self.stats['epoch'] = []
         self.stats['episodes'] = []
-        self.stats['av_rew'] = []
+        # self.stats['av_rew'] = []
         self.stats['global_sr'] = []
         keys = ['goal_sampler', 'rollout', 'gs_update', 'store', 'norm_update',
                 'policy_train', 'eval', 'epoch', 'total']
         for k in keys:
             self.stats['t_{}'.format(k)] = []
 
-    def save(self, epoch, episode_count, av_rew, global_sr, time_dict):
+    def save(self, epoch, episode_count, av_sr, av_rew, global_sr, time_dict):
         self.stats['epoch'].append(epoch)
         self.stats['episodes'].append(episode_count)
         self.stats['global_sr'].append(global_sr)
         for k in time_dict.keys():
             self.stats['t_{}'.format(k)].append(time_dict[k])
-        self.stats['av_rew'].append(av_rew)
+        # self.stats['av_rew'].append(av_rew)
+        self.stats['sr_internal'].append(av_sr[0])
+        self.stats['sr_external'].append(av_sr[1])
+        self.stats['r_internal'].append(av_sr[0])
+        self.stats['r_external'].append(av_sr[1])
         # Compute entropy of discovered goal distibution
         # h = get_h(np.array(self.discovered_goals), k=5)
         # self.stats['entropy'].append(h) 

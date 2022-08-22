@@ -62,7 +62,7 @@ register(
 id='HandReach-v2',
 entry_point='env.reach:HandReachEnv',
 kwargs={
-        'reward_type': 'sparse'
+        'reward_type': 'incremental'
         },
 max_episode_steps=50,
 )

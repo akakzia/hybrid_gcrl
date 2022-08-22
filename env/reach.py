@@ -73,16 +73,19 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
     # ----------------------------
 
     def compute_reward(self, achieved_goal, goal, info):
-        d = goal_distance(achieved_goal, goal)
-        return (d < self.distance_threshold).astype(np.float32)
-        # """ Given the achieved goal and the goal, computes the reward for the HandReach-v0 environment """
-        # nb_features_per_finger = 3
-        # nb_fingers = 5
-        # distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
-        #                                     goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
-        #                     for i in range(nb_fingers)])
+        if self.reward_type == 'sparse':
+            d = goal_distance(achieved_goal, goal)
+            return (d < self.distance_threshold).astype(np.float32)
+        elif self.reward_type == 'incremental':
+            nb_features_per_finger = 3
+            nb_fingers = 5
+            distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
+                                                goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
+                                for i in range(nb_fingers)])
 
-        # return np.sum(distances < 0.01)
+            return np.sum(distances < 0.01)
+        else: 
+            raise NotImplementedError
 
     # RobotEnv methods
     # ----------------------------
@@ -141,15 +144,19 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
         return goal.flatten()
 
     def _is_success(self, achieved_goal, desired_goal):
-        d = goal_distance(achieved_goal, desired_goal)
-        return (d < self.distance_threshold).astype(np.float32)
-        # nb_features_per_finger = 3
-        # nb_fingers = 5
-        # distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
-        #                                      desired_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
-        #                     for i in range(nb_fingers)])
+        if self.reward_type == 'sparse':
+            d = goal_distance(achieved_goal, desired_goal)
+            return (d < self.distance_threshold).astype(np.float32)
+        elif self.reward_type == 'incremental':
+            nb_features_per_finger = 3
+            nb_fingers = 5
+            distances = np.array([np.linalg.norm(achieved_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)] - \
+                                                desired_goal[nb_features_per_finger*i:nb_features_per_finger*(i+1)])
+                                for i in range(nb_fingers)])
 
-        # return np.sum(distances < 0.01) == nb_fingers
+            return np.sum(distances < 0.01) == nb_fingers
+        else:
+            raise NotImplementedError
 
     def _render_callback(self):
         # Visualize targets.

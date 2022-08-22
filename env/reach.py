@@ -101,6 +101,10 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
         }
     
     def reset_goal(self, goal=None, external=True):
+        super(HandReachEnv, self).reset()
+        did_reset_sim = False
+        while not did_reset_sim:
+            did_reset_sim = self._reset_sim()
         if external:
             self.goal = self._sample_goal()
         else:

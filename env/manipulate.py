@@ -2,7 +2,8 @@ import os
 import numpy as np
 
 from gym import utils, error
-from env import rotations, hand_env
+from env import rotations
+from gym.envs.robotics import hand_env
 from gym.envs.robotics.utils import robot_get_obs
 
 try:
@@ -120,7 +121,7 @@ class ManipulateEnv(hand_env.HandEnv):
     def compute_reward(self, achieved_goal, goal, info):
         if self.reward_type == 'sparse':
             success = self._is_success(achieved_goal, goal).astype(np.float32)
-            return (success - 1.)
+            return success
         else:
             d_pos, d_rot = self._goal_distance(achieved_goal, goal)
             # We weigh the difference in position to avoid that `d_pos` (in meters) is completely
@@ -201,6 +202,18 @@ class ManipulateEnv(hand_env.HandEnv):
             except mujoco_py.MujocoException:
                 return False
         return is_on_palm()
+    
+    def reset_goal(self, goal=None, external=True):
+        super(ManipulateEnv, self).reset()
+        did_reset_sim = False
+        while not did_reset_sim:
+            did_reset_sim = self._reset_sim()
+        if external:
+            self.goal = self._sample_goal()
+        else:
+            self.goal = goal
+        obs = self._get_obs()
+        return obs
 
     def _sample_goal(self):
         # Select a goal for the object position.

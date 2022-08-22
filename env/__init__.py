@@ -59,21 +59,32 @@ register(id='FetchManipulate1ObjectContinuous-v0',
 
 # Hand
 register(
-id='HandReach-v2',
-entry_point='env.reach:HandReachEnv',
-kwargs={
-        'reward_type': 'sparse'
-        },
-max_episode_steps=50,
+        id='HandReach-v2',
+        entry_point='env.reach:HandReachEnv',
+        kwargs={
+                'reward_type': 'sparse'
+                },
+        max_episode_steps=50,
+        )
+
+register(
+        id='HandManipulateBlockRotateXYZ-v2',
+        entry_point='env.envs:HandBlockEnv',
+        kwargs={
+                'reward_type': 'sparse',
+                'target_position': 'ignore',
+                'target_rotation': 'xyz'
+                },
+        max_episode_steps=100,
 )
 
 register(
-id='HandManipulateBlockRotateZ-v1',
-entry_point='env.envs:HandBlockEnv',
-kwargs={
-        'reward_type': 'sparse',
-        'target_position': 'ignore',
-        'target_rotation': 'z'
-        },
-max_episode_steps=100,
+        id='HandManipulateEggFull-v2',
+        entry_point='env.envs:HandEggEnv',
+        kwargs={
+                'reward_type': 'sparse',
+                'target_position': 'ignore',
+                'target_rotation': 'xyz'
+                },
+        max_episode_steps=100,
 )

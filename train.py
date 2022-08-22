@@ -109,8 +109,7 @@ def launch(args):
 
             # Goal Sampler updates
             t_i = time.time()
-            if args.external_goal_generation_ratio < 1.:
-                episodes = goal_sampler.update(episodes)
+            episodes = goal_sampler.update(episodes)
             time_dict['gs_update'] += time.time() - t_i
 
             # Storing episodes

@@ -67,7 +67,6 @@ class GoalSampler:
         self.stats['episodes'] = []
         self.stats['av_rew'] = []
         self.stats['global_sr'] = []
-        self.stats['entropy'] = []
         keys = ['goal_sampler', 'rollout', 'gs_update', 'store', 'norm_update',
                 'policy_train', 'eval', 'epoch', 'total']
         for k in keys:
@@ -81,5 +80,5 @@ class GoalSampler:
             self.stats['t_{}'.format(k)].append(time_dict[k])
         self.stats['av_rew'].append(av_rew)
         # Compute entropy of discovered goal distibution
-        h = get_h(np.array(self.discovered_goals), k=5)
-        self.stats['entropy'].append(h) 
+        # h = get_h(np.array(self.discovered_goals), k=5)
+        # self.stats['entropy'].append(h) 

@@ -194,6 +194,9 @@ class RLAgent:
         torch.save([self.o_norm.mean, self.o_norm.std, self.g_norm.mean, self.g_norm.std,
                     self.model.actor.state_dict(), self.model.critic.state_dict()],
                     model_path + '/model_{}.pt'.format(epoch))
+        
+        # Save discovered goals to compute entropy after training
+        torch.save(self.goal_sampler.discovered_goals, model_path + '/discovered_goals.pt')
 
     def load(self, model_path, args):
 

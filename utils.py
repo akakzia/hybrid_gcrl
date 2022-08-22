@@ -14,7 +14,6 @@ def init_storage(args):
     # path to save the model
     logdir = os.path.join(args.save_dir, '{}_{}_{}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
                           args.env_name, args.external_goal_generation_ratio))
-    logdir += '_{}'.format(args.reward_type)
     # path to save evaluations
     model_path = os.path.join(logdir, 'models')
     if not os.path.exists(logdir):

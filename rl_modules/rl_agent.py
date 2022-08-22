@@ -5,7 +5,7 @@ from rl_modules.replay_buffer import ReplayBuffer
 from rl_modules.networks import QNetworkFlat, GaussianPolicyFlat
 from mpi_utils.normalizer import normalizer
 from her_modules.her import her_sampler
-from updates import update_flat, update_deepsets
+from updates import update_ddpg
 
 
 """
@@ -21,7 +21,6 @@ class RLAgent:
     def __init__(self, args, compute_rew, goal_sampler):
 
         self.args = args
-        self.alpha = args.alpha
         self.env_params = args.env_params
 
         self.goal_sampler = goal_sampler
@@ -73,12 +72,6 @@ class RLAgent:
         self.o_norm = normalizer(size=self.env_params['obs'], default_clip_range=self.args.clip_range)
         self.g_norm = normalizer(size=self.env_params['goal'], default_clip_range=self.args.clip_range)
 
-        # Target Entropy
-        if self.args.automatic_entropy_tuning:
-            self.target_entropy = -torch.prod(torch.Tensor(self.env_params['action'])).item()
-            self.log_alpha = torch.zeros(1, requires_grad=True)
-            self.alpha_optim = torch.optim.Adam([self.log_alpha], lr=self.args.lr_entropy)
-
         # her sampler
         self.her_module = her_sampler(self.args, compute_rew)
 
@@ -101,27 +94,27 @@ class RLAgent:
                 obs_tensor = obs_tensor.cuda()
                 g_norm = g_norm.cuda()
                 ag_norm = ag_norm.cuda()
-            self.model.policy_forward_pass(obs_tensor, ag_norm, g_norm, no_noise=no_noise)
+            self.model.policy_forward_pass(obs_tensor, ag_norm, g_norm, no_noise=True)
             if self.args.cuda:
                 action = self.model.pi_tensor.cpu().numpy()[0]
             else:
                 action = self.model.pi_tensor.numpy()[0]
+            
+            if not no_noise:
+                # add the gaussian
+                action += self.args.noise_eps * self.env_params['action_max'] * np.random.randn(*action.shape)
+                action = np.clip(action, -self.env_params['action_max'], self.env_params['action_max'])
+                # random actions...
+                random_actions = np.random.uniform(low=-self.env_params['action_max'], high=self.env_params['action_max'], \
+                                                    size=self.env_params['action'])
+                # choose if use the random actions
+                action += np.random.binomial(1, self.args.random_eps, 1)[0] * (random_actions - action)
+
                 
         return action.copy()
     
     def store(self, episodes):
         self.buffer.store_episode(episode_batch=episodes)
-
-    # pre_process the inputs
-    def _preproc_inputs(self, obs, ag, g):
-        obs_norm = self.o_norm.normalize(obs)
-        delta_g = g - ag
-        # concatenate the stuffs
-        inputs = np.concatenate([obs_norm, delta_g])
-        inputs = torch.tensor(inputs, dtype=torch.float32).unsqueeze(0)
-        if self.args.cuda:
-            inputs = inputs.cuda()
-        return inputs
 
     def train(self):
         # train the network
@@ -132,13 +125,6 @@ class RLAgent:
         if self.total_iter % self.freq_target_update == 0:
             self._soft_update_target_network(self.model.critic_target, self.model.critic)
                 
-
-    def _select_actions(self, state, no_noise=False):
-        if not no_noise:
-            action, _, _ = self.actor_network.sample(state)
-        else:
-            _, _, action = self.actor_network.sample(state)
-        return action.detach().cpu().numpy()[0]
 
     # update the normalizer
     def _update_normalizer(self, episode):
@@ -201,8 +187,8 @@ class RLAgent:
         obs_next_norm = self.o_norm.normalize(transitions['obs_next'])
         ag_next_norm = self.g_norm.normalize(transitions['ag_next'])
 
-        update_deepsets(self.model, self.policy_optim, self.critic_optim, self.alpha, self.log_alpha, self.target_entropy, self.alpha_optim,
-            obs_norm, ag_norm, g_norm, obs_next_norm, ag_next_norm, actions, rewards, self.args)
+        update_ddpg(self.model, self.policy_optim, self.critic_optim, obs_norm, ag_norm, g_norm, obs_next_norm, ag_next_norm, actions,
+                        rewards, self.args)
 
     def save(self, model_path, epoch):
         torch.save([self.o_norm.mean, self.o_norm.std, self.g_norm.mean, self.g_norm.std,

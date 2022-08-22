@@ -76,6 +76,7 @@ class GoalSampler:
         self.stats['r_external'] = []
         self.stats['epoch'] = []
         self.stats['episodes'] = []
+        self.stats['entropy'] = []
         # self.stats['av_rew'] = []
         self.stats['global_sr'] = []
         keys = ['goal_sampler', 'rollout', 'gs_update', 'store', 'norm_update',
@@ -94,6 +95,9 @@ class GoalSampler:
         self.stats['sr_external'].append(av_sr[1])
         self.stats['r_internal'].append(av_sr[0])
         self.stats['r_external'].append(av_sr[1])
-        # Compute entropy of discovered goal distibution
-        # h = get_h(np.array(self.discovered_goals), k=5)
-        # self.stats['entropy'].append(h) 
+        # Compute entropy of discovered goal distibution in the running epoch
+        running_data = self.discovered_goals[-1900:]
+        # Normalize
+        running_data = (running_data - np.mean(running_data, axis=0)) / np.std(running_data, axis=0)
+        h = get_h(np.array(running_data), k=5)
+        self.stats['entropy'].append(h) 

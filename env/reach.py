@@ -75,7 +75,7 @@ class HandReachEnv(hand_env.HandEnv, utils.EzPickle):
     def compute_reward(self, achieved_goal, goal, info):
         if self.reward_type == 'sparse':
             d = goal_distance(achieved_goal, goal)
-            return (d < self.distance_threshold).astype(np.float32)
+            return -(d > self.distance_threshold).astype(np.float32)
         elif self.reward_type == 'incremental':
             nb_features_per_finger = 3
             nb_fingers = 5

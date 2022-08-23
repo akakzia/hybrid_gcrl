@@ -17,9 +17,9 @@ matplotlib.rcParams['ps.fonttype'] = 42
 plt.rcParams['figure.constrained_layout.use'] = True
 
 cmap = plt.get_cmap('tab20b')
-colors = np.array(cmap.colors)[[2, 0, 5, 4, 8, 13]]
+colors = np.array(cmap.colors)[[2, 0, 17, 4, 8, 13]]
 
-RESULTS_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/results'
+RESULTS_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/progress_data'
 SAVE_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/plots/'
 # TO_PLOT = ['FetchManipulate1ObjectContinuous-v0']
 TO_PLOT = ['HandReach-v2']
@@ -193,73 +193,60 @@ def plot_sr_av(max_len, experiment_path, folder):
     save_fig(path=SAVE_PATH + folder + '_sr.pdf', artists=artists)
 
 
-def plot_sr_av_all(max_len, experiment_path):
-    fig, artists, ax = setup_n_figs(n=1,
-                                   m=3, 
-                                #    xlabels=[None, None, 'Episodes (x$10^3$)', 'Episodes (x$10^3$)'],
-                                #    ylabels= ['Success Rate', None] * 2,
-                                   xlabels = ['Episodes (x$10^3$)'] * 3,
-                                   ylabels = ['Success Rate', None, None],
-                                   xlims = [[-1, LIM] for _ in range(4)],
-                                   ylims= [[-0.02, 1.03] for _ in range(4)]
-        )
-    # titles = ['Continuous-GN', 'Continuous-IN', 'Continuous-RN', 'Continuous-DS', 'Continuous-Flat']
-    titles = ['Continuous-GN', 'Continuous-IN', 'Continuous-DS']
-    for k, folder in enumerate(['continuous_full_gn', 'continuous_interaction_network_2', 'continuous_deep_sets']):
-        condition_path = experiment_path + folder + '/'
-        list_runs = sorted(os.listdir(condition_path))
-        global_sr = np.zeros([len(list_runs), max_len])
-        global_sr.fill(np.nan)
-        sr_data = np.zeros([len(list_runs), NB_CLASSES, max_len])
-        sr_data.fill(np.nan)
-        x_eps = np.arange(0, (LAST_EP + 1) * NB_EPS_PER_EPOCH, NB_EPS_PER_EPOCH * FREQ) / 1000
-        # x_eps = np.arange(0, max_len, FREQ)
-        x = np.arange(0, LAST_EP + 1, FREQ)
+def get_entropy(experiment_path, max_len, max_seeds, conditions=None, labels=None):
+    if conditions is None:
+        conditions = os.listdir(experiment_path)
+    sr = np.zeros([max_seeds, len(conditions), LAST_EP + 1 ])
+    sr.fill(np.nan)
+    for i_cond, cond in enumerate(conditions):
+        cond_path = experiment_path + cond + '/'
+        list_runs = sorted(os.listdir(cond_path))
         for i_run, run in enumerate(list_runs):
-            run_path = condition_path + run + '/'
+            run_path = cond_path + run + '/'
             data_run = pd.read_csv(run_path + 'progress.csv')
+            all_sr = np.array(data_run['entropy'][:LAST_EP + 1])
+            sr[i_run, i_cond, :all_sr.size] = all_sr.copy()
 
-            T = len(data_run['Eval_SR_1'][:LAST_EP + 1])
-            SR = np.zeros([NB_CLASSES, T])
-            for t in range(T):
-                for i in range(NB_CLASSES):
-                    SR[i, t] = data_run['Eval_SR_{}'.format(i+1)][t]
-            all_sr = np.mean([data_run['Eval_SR_{}'.format(i+1)] for i in range(NB_CLASSES)], axis=0)
 
-            sr_buckets = []
-            for i in range(SR.shape[0]):
-                sr_buckets.append(SR[i])
-            sr_buckets = np.array(sr_buckets)
-            sr_data[i_run, :, :sr_buckets.shape[1]] = sr_buckets.copy()
-            global_sr[i_run, :all_sr.size] = all_sr.copy()
-        
-        sr_per_cond_stats = np.zeros([NB_CLASSES, max_len, 3])
-        sr_per_cond_stats[:, :, 0] = line(sr_data)
-        sr_per_cond_stats[:, :, 1] = err_min(sr_data)
-        sr_per_cond_stats[:, :, 2] = err_plus(sr_data)
-        av = line(global_sr)
-        for i in range(NB_CLASSES):
-            ax[k].plot(x_eps, sr_per_cond_stats[i, x, 0], color=colors[i], marker=MARKERS[i], markersize=MARKERSIZE, linewidth=LINEWIDTH)
-        ax[k].plot(x_eps, av[x], color=[0.3]*3, linestyle='--', linewidth=LINEWIDTH // 2)
+    sr_per_cond_stats = np.zeros([len(conditions), LAST_EP + 1, 3])
+    sr_per_cond_stats[:, :, 0] = line(sr)
+    sr_per_cond_stats[:, :, 1] = err_min(sr)
+    sr_per_cond_stats[:, :, 2] = err_plus(sr)
 
-        for i in range(NB_CLASSES):
-            ax[k].fill_between(x_eps, sr_per_cond_stats[i, x, 1], sr_per_cond_stats[i, x, 2], color=colors[i], alpha=ALPHA)
 
-        ax[k].set_yticks([0, 0.25, 0.5, 0.75, 1])
-        ax[k].grid()
-        ax[k].set_title(titles[k], fontname='monospace', fontweight='bold')
-    # ax.set_facecolor((244/255, 244/255, 244/255))
-    leg = fig.legend(#['$C_1$', '$C_2$', '$C_3$', '$S_2$', '$S_3$', '$S_2$ & $S_2$', '$S_2$ & $S_3$', '$P_3$', '$P_3$ & $S_2$', '$S_4$', '$S_5$', 'Global'],
-                    ['No Stacks', '$\widetilde{S}_2$', '$\widetilde{S}_3$', '$\widetilde{S}_4$', '$\widetilde{S}_5$', 'Global'],
-                    loc='upper center',
-                    bbox_to_anchor=(0.525, 1.22),
-                    ncol=6,
-                    fancybox=True,
-                    shadow=True,
-                    prop={'size': 65, 'weight': 'normal'},
-                    markerscale=1)
+    x_eps = np.arange(0, (LAST_EP + 1) * NB_EPS_PER_EPOCH, NB_EPS_PER_EPOCH * FREQ) / 1000
+    x = np.arange(0, LAST_EP + 1, FREQ)
+    artists, ax = setup_figure(xlabel='Episodes (x$10^3$)',
+                               # xlabel='Epochs',
+                               ylabel='Entropy',
+                               xlim=[-1, LIM],
+                               ylim=[-0.02, 3 -0.02 + 0.04 ])
+
+    for i in range(len(conditions)):
+        plt.plot(x_eps, sr_per_cond_stats[i, x, 0], color=colors[i], marker=MARKERS[i], markersize=MARKERSIZE, linewidth=LINEWIDTH)
+
+    if labels is None:
+        labels = conditions
+    leg = plt.legend(labels,
+                     loc='upper center',
+                     bbox_to_anchor=(0.5, 1.2),
+                     ncol=3,
+                     fancybox=True,
+                     shadow=True,
+                     prop={'size': 50, 'weight': 'bold'},
+                     markerscale=1,
+                     )
+    for l in leg.get_lines():
+        l.set_linewidth(7.0)
     artists += (leg,)
-    save_fig(path=SAVE_PATH + 'per_class.pdf', artists=artists)
+    for i in range(len(conditions)):
+        plt.fill_between(x_eps, sr_per_cond_stats[i, x, 1], sr_per_cond_stats[i, x, 2], color=colors[i], alpha=ALPHA)
+    
+    # ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
+    plt.grid()
+    # ax.set_facecolor((244/255, 244/255, 244/255))
+    save_fig(path=SAVE_PATH + PLOT + '_entropy.pdf', artists=artists)
+    return sr_per_cond_stats.copy()
 
 
 def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=None):
@@ -274,7 +261,7 @@ def get_mean_sr(experiment_path, max_len, max_seeds, conditions=None, labels=Non
             run_path = cond_path + run + '/'
             data_run = pd.read_csv(run_path + 'progress.csv')
             # all_sr = np.mean(np.array([data_run['Eval_SR_{}'.format(i+1)][:LAST_EP + 1] for i in range(NB_CLASSES)]), axis=0)
-            all_sr = np.array(data_run['sr_internal'][:LAST_EP + 1])
+            all_sr = np.array(data_run['sr_external'][:LAST_EP + 1])
             sr[i_run, i_cond, :all_sr.size] = all_sr.copy()
 
 
@@ -350,5 +337,4 @@ if __name__ == '__main__':
         conditions = [f'main_{PLOT}_hgep={s}' for s in [0.0, 0.05, 0.1, 0.2, 0.5, 1.0]]
         labels = ['IMGEP'] + [f'HGEP-{s*100}%' for s in [0.05, 0.1, 0.2, 0.5]] + ['EMGEP']
         get_mean_sr(experiment_path, max_len, max_seeds, conditions, labels)
-        # plot_sr_av(max_len, experiment_path, 'flat')
-        # plot_sr_av_all(max_len, experiment_path)
+        # get_entropy(experiment_path, max_len, max_seeds, conditions, labels)

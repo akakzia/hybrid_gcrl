@@ -96,8 +96,24 @@ class GoalSampler:
         self.stats['r_internal'].append(av_sr[0])
         self.stats['r_external'].append(av_sr[1])
         # Compute entropy of discovered goal distibution in the running epoch
-        running_data = self.discovered_goals[-1900:]
-        # Normalize
-        running_data = (running_data - np.mean(running_data, axis=0)) / np.std(running_data, axis=0)
-        h = get_h(np.array(running_data), k=5)
+        running_data = np.array(self.discovered_goals[-1900:])
+        # Depending on the environment, compute entropy
+        # For HandReach, sum entropy of all fingers
+        if running_data.shape[-1] % 3 == 0:
+            k = running_data.shape[-1] // 3
+            running_data = np.reshape(running_data, [k, -1, 3])
+            
+            h = 0
+            for d in running_data:
+                # Normalize
+                norm_d = (d - np.mean(d, axis=0)) / np.std(d, axis=0)
+                h += get_h(np.array(norm_d), k=5)
+        else:
+            running_pos = running_data[:, :3]
+            running_rot = running_data[:, 3:]
+            running_pos = (running_pos - np.mean(running_pos, axis=0)) / np.std(running_pos, axis=0)
+            running_rot = (running_rot - np.mean(running_rot, axis=0)) / np.std(running_rot, axis=0)
+            h_pos = get_h(np.array(running_pos), k=5)
+            h_rot = get_h(np.array(running_rot), k=5)
+            h = h_pos+ h_rot
         self.stats['entropy'].append(h) 

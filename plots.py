@@ -21,8 +21,10 @@ colors = np.array(cmap.colors)[[2, 0, 17, 4, 8, 13]]
 
 RESULTS_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/progress_data'
 SAVE_PATH = '/home/ahmed/Documents/Amaterasu/hybrid_gcrl/hybrid_gcrl/studies/plots/'
-# TO_PLOT = ['FetchManipulate1ObjectContinuous-v0']
-TO_PLOT = ['HandReach-v2']
+TO_PLOT = ['FetchManipulate1ObjectContinuous-v0']
+# TO_PLOT = ['HandReach-v2']
+# TO_PLOT = ['HandManipulateBlockRotateXYZ-v2']
+# TO_PLOT = ['HandManipulateEggFull-v2']
 NB_CLASSES = 11 # 12 for 5 blocks
 
 LINE = 'mean'
@@ -35,11 +37,11 @@ MARKERSIZE = 15 # 15 for per class
 ALPHA = 0.3
 ALPHA_TEST = 0.05
 MARKERS = ['o', 'v', 's', 'P', 'D', 'X', "*", 'v', 's', 'p', 'P', '1']
-FREQ = 5
+FREQ = 2
 NB_BUCKETS = 10
 NB_EPS_PER_EPOCH = 1900
 NB_VALID_GOALS = 35
-LAST_EP = 50
+LAST_EP = 51
 LIM = NB_EPS_PER_EPOCH * LAST_EP / 1000 + 5
 line, err_min, err_plus = get_stat_func(line=LINE, err=ERR)
 COMPRESSOR = CompressPDF(4)
@@ -220,7 +222,7 @@ def get_entropy(experiment_path, max_len, max_seeds, conditions=None, labels=Non
                                # xlabel='Epochs',
                                ylabel='Entropy',
                                xlim=[-1, LIM],
-                               ylim=[-0.02, 3 -0.02 + 0.04 ])
+                               ylim=[-0.02, 20 -0.02 + 0.04 ])
 
     for i in range(len(conditions)):
         plt.plot(x_eps, sr_per_cond_stats[i, x, 0], color=colors[i], marker=MARKERS[i], markersize=MARKERSIZE, linewidth=LINEWIDTH)
@@ -336,5 +338,5 @@ if __name__ == '__main__':
 
         conditions = [f'main_{PLOT}_hgep={s}' for s in [0.0, 0.05, 0.1, 0.2, 0.5, 1.0]]
         labels = ['IMGEP'] + [f'HGEP-{s*100}%' for s in [0.05, 0.1, 0.2, 0.5]] + ['EMGEP']
-        get_mean_sr(experiment_path, max_len, max_seeds, conditions, labels)
-        # get_entropy(experiment_path, max_len, max_seeds, conditions, labels)
+        # get_mean_sr(experiment_path, max_len, max_seeds, conditions, labels)
+        get_entropy(experiment_path, max_len, max_seeds, conditions, labels)
